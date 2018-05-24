@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	// ceshi112
+	// ceshi
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintln(writer, "<h1>Hello World!</h1>")
 	})
