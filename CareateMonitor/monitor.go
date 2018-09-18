@@ -16,6 +16,20 @@ func main() {
 	cp, _ := cpu.Percent(time.Second, false)
 	n, _ := net.Connections("tcp")
 
+	established := 0
+	timewait := 0
+	closewait := 0
+	for _, item := range n {
+		if item.Status == "ESTABLISHED" {
+			established++
+		}
+		if item.Status == "TIME_WAIT" {
+			timewait++
+		}
+		if item.Status == "CLOSE_WAIT" {
+			closewait++
+		}
+	}
 	// almost every return value is a struct
 	fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", m.Total, m.Free, m.UsedPercent)
 
@@ -23,4 +37,7 @@ func main() {
 	fmt.Println(d)
 	fmt.Println(n)
 	fmt.Println(cp)
+	fmt.Println(established)
+	fmt.Println(timewait)
+	fmt.Println(closewait)
 }
