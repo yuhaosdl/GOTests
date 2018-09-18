@@ -1,6 +1,7 @@
 package main
 
 import (
+	"GOTests/websocketserver/impl"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -15,21 +16,30 @@ var (
 )
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
-	var (
-		conn *websocket.Conn
-		err  error
-		//messageType int
-		data []byte
-	)
-	if conn, err = upgrader.Upgrade(w, r, nil); err != nil {
-		return
-	}
-	for {
-		if _, data, err = conn.ReadMessage(); err != nil {
-			conn.Close()
-		}
-		if err = conn.WriteMessage(websocket.TextMessage, data); err != nil {
-			conn.Close()
+
+	// if conn, err := upgrader.Upgrade(w, r, nil); err == nil {
+	// 	for {
+	// 		if _, data, err := conn.ReadMessage(); err == nil {
+	// 			if err = conn.WriteMessage(websocket.TextMessage, data); err != nil {
+	// 				conn.Close()
+	// 			}
+	// 		} else {
+	// 			conn.Close()
+	// 		}
+	// 	}
+	// }
+	if wsConn, err := upgrader.Upgrade(w, r, nil); err == nil {
+		if conn, err := impl.InitConnection(wsConn); err == nil {
+			for {
+				if data, err := conn.ReadMessage(); err != nil {
+					conn.Close()
+				} else {
+					if err := conn.WriteMessage(data); err != nil {
+						conn.Close()
+					}
+				}
+			}
+
 		}
 	}
 }

@@ -21,6 +21,7 @@ func (self Foo) GetConst() {
 func main() {
 	fmt.Println(2123123)
 	people := People{Name: "yuhao", Age: 24}
+	//people2 := People{Name: "yuhao", Age: 24}
 	foo := Foo{Name: "校长", Age: 12}
 	fmt.Println(people)
 	alter(people)
