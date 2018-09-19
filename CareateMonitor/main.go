@@ -3,7 +3,8 @@ package main
 import "GOTests/CareateMonitor/monitor"
 
 func main() {
-	a := monitor.InitMonitor()
+	mongoWriter := monitor.InitMongoDBConnection("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB", "CareateMonitorDB", "test")
+	a := monitor.InitMonitor(mongoWriter)
 	go a.MonitorLoop()
 	a.Write()
 	// if session, err := mgo.Dial("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB"); err != nil {

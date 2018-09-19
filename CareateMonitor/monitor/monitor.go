@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -12,22 +11,39 @@ import (
 	gopsutilnet "github.com/shirou/gopsutil/net"
 )
 
+//MonitorMessage : 监控消息
+type MonitorMessage struct {
+	ServerName  string
+	ServerIP    string
+	InDateTime  string
+	Key         string
+	Value       string
+	Description string
+	CreateTime  string
+}
+
 //Monitor ：监控主体
 type Monitor struct {
 	IP            string
 	ServerName    string
 	messageChanel chan *MonitorMessage
+	writer        Writer
+}
+type Writer interface {
+	write(monitor *MonitorMessage)
 }
 
+//Write : 写入数据
 func (monitor *Monitor) Write() {
 	for {
 		data := <-monitor.messageChanel
-		fmt.Println(data)
+		//fmt.Println(data)
+		monitor.writer.write(data)
 	}
 }
 
 //InitMonitor ： 初始化
-func InitMonitor() (monitor *Monitor) {
+func InitMonitor(writer Writer) (monitor *Monitor) {
 	var addr string
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, address := range addrs {
@@ -186,15 +202,4 @@ func getTime() (dataTimeStr string) {
 func float64ToString(f float64) (str string) {
 	str = strconv.FormatFloat(f, 'f', 2, 64) + "%"
 	return
-}
-
-//MonitorMessage : 监控消息
-type MonitorMessage struct {
-	ServerName  string
-	ServerIP    string
-	InDateTime  string
-	Key         string
-	Value       string
-	Description string
-	CreateTime  string
 }
