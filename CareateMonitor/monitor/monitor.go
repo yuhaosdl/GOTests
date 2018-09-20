@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -24,26 +25,33 @@ type MonitorMessage struct {
 
 //Monitor ：监控主体
 type Monitor struct {
-	IP            string
-	ServerName    string
-	messageChanel chan *MonitorMessage
-	writer        Writer
+	IP              string
+	ServerName      string
+	messageChanel   chan *MonitorMessage
+	writer          Writer
+	CreateTime      string
+	monitorInterval int
 }
+
+//Writer : 接口
 type Writer interface {
-	write(monitor *MonitorMessage)
+	write(monitor *MonitorMessage) (err error)
 }
 
 //Write : 写入数据
 func (monitor *Monitor) Write() {
 	for {
 		data := <-monitor.messageChanel
-		//fmt.Println(data)
-		monitor.writer.write(data)
+		go func() {
+			if err := monitor.writer.write(data); err != nil {
+				fmt.Println(err.Error())
+			}
+		}()
 	}
 }
 
 //InitMonitor ： 初始化
-func InitMonitor(writer Writer) (monitor *Monitor) {
+func InitMonitor(writer Writer, serverName string, interval int) (monitor *Monitor) {
 	var addr string
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, address := range addrs {
@@ -58,9 +66,11 @@ func InitMonitor(writer Writer) (monitor *Monitor) {
 		}
 	}
 	monitor = &Monitor{
-		messageChanel: make(chan *MonitorMessage),
-		IP:            addr,
-		ServerName:    "测试serverName",
+		messageChanel:   make(chan *MonitorMessage, 500),
+		IP:              addr,
+		ServerName:      serverName,
+		writer:          writer,
+		monitorInterval: interval,
 	}
 	return
 }
@@ -68,11 +78,12 @@ func InitMonitor(writer Writer) (monitor *Monitor) {
 //MonitorLoop : 循环监控 间隔X秒
 func (monitor *Monitor) MonitorLoop() {
 	for {
+		monitor.CreateTime = getTime()
 		go monitor.getCPUStat()
 		go monitor.getDiskStat()
 		go monitor.getMemStat()
 		go monitor.getNetStat()
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -86,6 +97,7 @@ func (monitor *Monitor) getMemStat() {
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
 			ServerIP:    monitor.IP,
+			CreateTime:  monitor.CreateTime,
 		}
 		monitor.messageChanel <- monitorMessage
 	}
@@ -101,6 +113,7 @@ func (monitor *Monitor) getDiskStat() {
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
 			ServerIP:    monitor.IP,
+			CreateTime:  monitor.CreateTime,
 		}
 		monitor.messageChanel <- monitorMessage
 	}
@@ -116,6 +129,7 @@ func (monitor *Monitor) getCPUStat() {
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
 			ServerIP:    monitor.IP,
+			CreateTime:  monitor.CreateTime,
 		}
 		monitor.messageChanel <- monitorMessage
 	}
@@ -147,9 +161,9 @@ func (monitor *Monitor) getNetStat() {
 	}
 	go monitor.getRedisStat(redis)
 	go monitor.getElasticsearchStat(elasticsearch)
-	go monitor.getStat("ESTABLISHED", strconv.Itoa(established))
-	go monitor.getStat("TIME_WAIT", strconv.Itoa(timewait))
-	go monitor.getStat("CLOSE_WAIT", strconv.Itoa(closewait))
+	go monitor.getStat("Net_Established", strconv.Itoa(established))
+	go monitor.getStat("Net_Timewait", strconv.Itoa(timewait))
+	go monitor.getStat("Net_Closewait", strconv.Itoa(closewait))
 }
 func (monitor *Monitor) getStat(key string, value string) {
 	monitorMessage := &MonitorMessage{
@@ -159,6 +173,7 @@ func (monitor *Monitor) getStat(key string, value string) {
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
 		ServerIP:    monitor.IP,
+		CreateTime:  monitor.CreateTime,
 	}
 	monitor.messageChanel <- monitorMessage
 }
@@ -170,6 +185,7 @@ func (monitor *Monitor) getRedisStat(n bool) {
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
 		ServerIP:    monitor.IP,
+		CreateTime:  monitor.CreateTime,
 	}
 	if n {
 		redisMonitorMessage.Value = "open"
@@ -185,6 +201,7 @@ func (monitor *Monitor) getElasticsearchStat(n bool) {
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
 		ServerIP:    monitor.IP,
+		CreateTime:  monitor.CreateTime,
 	}
 	if n {
 		monitorMessage.Value = "open"

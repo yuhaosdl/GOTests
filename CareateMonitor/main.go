@@ -1,45 +1,45 @@
 package main
 
-import "GOTests/CareateMonitor/monitor"
+import (
+	"GOTests/CareateMonitor/monitor"
+	"encoding/json"
+	"os"
+)
 
 func main() {
-	mongoWriter := monitor.InitMongoDBConnection("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB", "CareateMonitorDB", "test")
-	a := monitor.InitMonitor(mongoWriter)
+	// mongoWriter := monitor.InitMongoDBConnection("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB", "CareateMonitorDB", "test")
+	// defer mongoWriter.Close()
+	// a := monitor.InitMonitor(mongoWriter, "linux服务器")
+	// go a.MonitorLoop()
+	// a.Write()
+	conf := GetConf("CareateMonitor.json")
+	mongoWriter := monitor.InitMongoDBConnection(conf.ConnectionStr, conf.DBName, conf.CollectionName)
+	defer mongoWriter.Close()
+	a := monitor.InitMonitor(mongoWriter, conf.ServerName, conf.Interval)
 	go a.MonitorLoop()
 	a.Write()
-	// if session, err := mgo.Dial("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB"); err != nil {
-	// 	fmt.Println(err.Error())
-	// 	fmt.Println(1)
-	// } else {
-	// 	fmt.Println(session)
-	// 	fmt.Println(1)
-	// }
+}
 
-	// m, _ := mem.VirtualMemory()
-	// d, _ := disk.Usage("/")
-	//n, _ := net.Connections("tcp")
+//GetConf ： 获取配置文件
+func GetConf(fileName string) (conf *Configuration) {
+	file, err := os.Open(fileName)
+	defer file.Close()
+	if err != nil {
+		panic("读取配置文件出错" + err.Error())
+	}
+	decoder := json.NewDecoder(file)
+	conf = &Configuration{}
+	err = decoder.Decode(&conf)
+	if err != nil {
+		panic("Decode配置文件出错" + err.Error())
+	}
+	return
+}
 
-	// established := 0
-	// timewait := 0
-	// closewait := 0
-	// for _, item := range n {
-	// 	if item.Status == "ESTABLISHED" {
-	// 		established++
-	// 	}
-	// 	if item.Status == "TIME_WAIT" {
-	// 		timewait++
-	// 	}
-	// 	if item.Status == "CLOSE_WAIT" {
-	// 		closewait++
-	// 	}
-	// }
-	// almost every return value is a struct
-	// fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", m.Total, m.Free, m.UsedPercent)
-
-	// // convert to JSON. String() is also implemented
-	// fmt.Println(d)
-	// fmt.Println(n)
-	// fmt.Println(established)
-	// fmt.Println(timewait)
-	// fmt.Println(closewait)
+type Configuration struct {
+	ServerName     string
+	ConnectionStr  string
+	DBName         string
+	CollectionName string //
+	Interval       int    //时间间隔秒
 }
