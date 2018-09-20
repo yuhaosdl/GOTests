@@ -83,7 +83,7 @@ func (monitor *Monitor) MonitorLoop() {
 		go monitor.getDiskStat()
 		go monitor.getMemStat()
 		go monitor.getNetStat()
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Duration(monitor.monitorInterval) * time.Second)
 	}
 }
 
@@ -131,7 +131,13 @@ func (monitor *Monitor) getCPUStat() {
 			ServerIP:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.messageChanel <- monitorMessage
+		select {
+		case monitor.messageChanel <- monitorMessage:
+		case <-time.After(1 * time.Second):
+			fmt.Println("写入messageChanel超时")
+
+		}
+
 	}
 }
 

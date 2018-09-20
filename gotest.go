@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 type Foo struct {
@@ -19,25 +20,30 @@ func (self Foo) GetConst() {
 	return
 }
 func main() {
-	fmt.Println(2123123)
-	people := People{Name: "yuhao", Age: 24}
-	//people2 := People{Name: "yuhao", Age: 24}
-	foo := Foo{Name: "校长", Age: 12}
-	fmt.Println(people)
-	alter(people)
-	fmt.Println(people)
-	var a Fee
-	a = &people
-	fmt.Printf("%p", &people)
-	fmt.Println()
-	people.Feed()
-	fmt.Println()
-	a.Feed()
-	tttt(a)
-	fmt.Println(foo)
-	foo.Get()
-	fmt.Println(foo)
+	testChanel := &TestChanel{
+		inChanel: make(chan string, 10),
+		close:    make(chan string, 1),
+	}
+	go func() {
+		time.Sleep(5 * time.Second)
+		close(testChanel.close)
+	}()
+	for {
+		select {
+		case testChanel.inChanel <- "1111":
+			fmt.Print("没关闭")
+		case a := <-testChanel.close:
+			fmt.Println(a)
+		}
+	}
+
 }
+
+type TestChanel struct {
+	inChanel chan string
+	close    chan string
+}
+
 func alter(people People) {
 	people.Name = "Lili"
 }
