@@ -4,6 +4,7 @@ import (
 	"GOTests/CareateMonitor/monitor"
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -18,7 +19,12 @@ func main() {
 
 //GetConf ： 获取配置文件
 func GetConf(fileName string) (conf *Configuration) {
-	file, err := os.Open(fileName)
+	execpath, err := os.Executable() // 获得程序路径
+	if err != nil {
+		panic("获取程序路径出错" + err.Error())
+	}
+	configfile := filepath.Join(filepath.Dir(execpath), "./"+fileName)
+	file, err := os.Open(configfile)
 	defer file.Close()
 	if err != nil {
 		panic("读取配置文件出错" + err.Error())

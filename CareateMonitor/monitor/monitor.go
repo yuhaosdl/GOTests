@@ -224,7 +224,7 @@ func getTime() (dataTimeStr string) {
 
 // float64ToString : float64转 string
 func float64ToString(f float64) (str string) {
-	str = strconv.FormatFloat(f, 'f', 2, 64) + "%"
+	str = strconv.FormatFloat(f, 'f', 2, 64)
 	return
 }
 
