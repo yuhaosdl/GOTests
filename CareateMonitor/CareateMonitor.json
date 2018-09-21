@@ -1,0 +1,17 @@
+{
+    "ServerName": "linux服务器",
+    "ConnectionStr": "mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB",
+    "DBName": "CareateMonitorDB",
+    "CollectionName": "test",
+    "Interval": 15,
+    "SupervisePort": [
+        {
+            "Key": "Service_redis",
+            "Value": 6379
+        },
+        {
+            "Key": "Service_elasticsearch",
+            "Value": 9200
+        }
+    ]
+}

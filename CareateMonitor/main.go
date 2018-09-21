@@ -7,17 +7,13 @@ import (
 )
 
 func main() {
-	// mongoWriter := monitor.InitMongoDBConnection("mongodb://CareateAdmin:Careate2016!@127.0.0.1:27017/CareateMonitorDB", "CareateMonitorDB", "test")
-	// defer mongoWriter.Close()
-	// a := monitor.InitMonitor(mongoWriter, "linux服务器")
-	// go a.MonitorLoop()
-	// a.Write()
 	conf := GetConf("CareateMonitor.json")
 	mongoWriter := monitor.InitMongoDBConnection(conf.ConnectionStr, conf.DBName, conf.CollectionName)
 	defer mongoWriter.Close()
-	a := monitor.InitMonitor(mongoWriter, conf.ServerName, conf.Interval)
+	a := monitor.InitMonitor(mongoWriter, conf.ServerName, conf.Interval, conf.SupervisePort)
 	go a.MonitorLoop()
 	a.Write()
+
 }
 
 //GetConf ： 获取配置文件
@@ -36,10 +32,12 @@ func GetConf(fileName string) (conf *Configuration) {
 	return
 }
 
+//Configuration : 配置文件
 type Configuration struct {
 	ServerName     string
 	ConnectionStr  string
 	DBName         string
-	CollectionName string //
-	Interval       int    //时间间隔秒
+	CollectionName string                  //
+	Interval       int                     //时间间隔秒
+	SupervisePort  []monitor.SupervisePort //监控服务
 }
