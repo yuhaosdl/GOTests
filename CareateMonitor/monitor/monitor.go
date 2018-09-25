@@ -201,7 +201,7 @@ func (monitor *Monitor) getServiceStat() {
 	for _, item := range monitor.supervisePort {
 		monitorMessage := &MonitorMessage{
 			Key:         item.Key,
-			Value:       "close",
+			Value:       "0",
 			Description: item.Key,
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
@@ -209,7 +209,7 @@ func (monitor *Monitor) getServiceStat() {
 			CreateTime:  monitor.CreateTime,
 		}
 		if item.Status {
-			monitorMessage.Value = "open"
+			monitorMessage.Value = "1"
 		}
 		monitor.toMessageChannel(monitorMessage)
 	}
