@@ -27,7 +27,7 @@ type MonitorMessage struct {
 type Monitor struct {
 	IP              string
 	ServerName      string
-	messageChanel   chan *MonitorMessage
+	messageChannel  chan *MonitorMessage
 	writer          Writer
 	CreateTime      string
 	monitorInterval int
@@ -42,7 +42,7 @@ type Writer interface {
 //Write : 写入数据
 func (monitor *Monitor) Write() {
 	for {
-		data := <-monitor.messageChanel
+		data := <-monitor.messageChannel
 		go func() {
 			if err := monitor.writer.write(data); err != nil {
 				fmt.Println(err.Error())
@@ -67,7 +67,7 @@ func InitMonitor(writer Writer, serverName string, interval int, supervisePort [
 		}
 	}
 	monitor = &Monitor{
-		messageChanel:   make(chan *MonitorMessage, 500),
+		messageChannel:  make(chan *MonitorMessage, 500),
 		IP:              addr,
 		ServerName:      serverName,
 		writer:          writer,
@@ -101,7 +101,7 @@ func (monitor *Monitor) getHeartbeat() {
 		ServerIP:    monitor.IP,
 		CreateTime:  monitor.CreateTime,
 	}
-	monitor.toMessageChanel(monitorMessage)
+	monitor.toMessageChannel(monitorMessage)
 }
 
 //getMemStat : 循环获取内存状态
@@ -116,7 +116,7 @@ func (monitor *Monitor) getMemStat() {
 			ServerIP:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.toMessageChanel(monitorMessage)
+		monitor.toMessageChannel(monitorMessage)
 	}
 }
 
@@ -132,7 +132,7 @@ func (monitor *Monitor) getDiskStat() {
 			ServerIP:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.toMessageChanel(monitorMessage)
+		monitor.toMessageChannel(monitorMessage)
 	}
 }
 
@@ -148,7 +148,7 @@ func (monitor *Monitor) getCPUStat() {
 			ServerIP:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.toMessageChanel(monitorMessage)
+		monitor.toMessageChannel(monitorMessage)
 
 	}
 }
@@ -194,7 +194,7 @@ func (monitor *Monitor) getStat(key string, value string) {
 		ServerIP:    monitor.IP,
 		CreateTime:  monitor.CreateTime,
 	}
-	monitor.toMessageChanel(monitorMessage)
+	monitor.toMessageChannel(monitorMessage)
 }
 
 func (monitor *Monitor) getServiceStat() {
@@ -211,7 +211,7 @@ func (monitor *Monitor) getServiceStat() {
 		if item.Status {
 			monitorMessage.Value = "open"
 		}
-		monitor.toMessageChanel(monitorMessage)
+		monitor.toMessageChannel(monitorMessage)
 	}
 
 }
@@ -229,11 +229,11 @@ func float64ToString(f float64) (str string) {
 }
 
 //toMessageChannel : 写入MessageChannel里
-func (monitor *Monitor) toMessageChanel(monitorMessage *MonitorMessage) {
+func (monitor *Monitor) toMessageChannel(monitorMessage *MonitorMessage) {
 	select {
-	case monitor.messageChanel <- monitorMessage:
+	case monitor.messageChannel <- monitorMessage:
 	case <-time.After(1 * time.Second):
-		fmt.Println("写入messageChanel超时")
+		fmt.Println("写入messageChannel超时")
 	}
 }
 
