@@ -20,23 +20,15 @@ func (self Foo) GetConst() {
 	return
 }
 func main() {
-	testChanel := &TestChanel{
-		inChanel: make(chan string, 10),
-		close:    make(chan string, 1),
-	}
+	ch := make(chan string)
 	go func() {
-		time.Sleep(5 * time.Second)
-		close(testChanel.close)
-	}()
-	for {
-		select {
-		case testChanel.inChanel <- "1111":
-			fmt.Print("没关闭")
-		case a := <-testChanel.close:
-			fmt.Println(a)
+		for {
+			ch <- "11"
 		}
-	}
 
+	}()
+	time.Sleep(1 * time.Second)
+	fmt.Println(<-ch)
 }
 
 type TestChanel struct {

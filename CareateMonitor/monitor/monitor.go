@@ -14,13 +14,13 @@ import (
 
 //MonitorMessage : 监控消息
 type MonitorMessage struct {
-	ServerName  string
-	ServerIP    string
-	InDateTime  string
-	Key         string
-	Value       string
-	Description string
-	CreateTime  string
+	ServerName  string `bson:"ServerName"`
+	ServerIP    string `bson:"ServerIP"`
+	InDateTime  string `bson:"InDateTime"`
+	Key         string `bson:"Key"`
+	Value       string `bson:"Value"`
+	Description string `bson:"Description"`
+	CreateTime  string `bson:"CreateTime"`
 }
 
 //Monitor ：监控主体
