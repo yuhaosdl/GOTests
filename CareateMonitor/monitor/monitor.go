@@ -15,7 +15,7 @@ import (
 //MonitorMessage : 监控消息
 type MonitorMessage struct {
 	ServerName  string `bson:"ServerName"`
-	ServerIP    string `bson:"ServerIP"`
+	ServerId    string `bson:"ServerId"`
 	InDateTime  string `bson:"InDateTime"`
 	Key         string `bson:"Key"`
 	Value       string `bson:"Value"`
@@ -98,7 +98,7 @@ func (monitor *Monitor) getHeartbeat() {
 		Description: monitor.ServerName + "-MonitorService",
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
-		ServerIP:    monitor.IP,
+		ServerId:    monitor.IP,
 		CreateTime:  monitor.CreateTime,
 	}
 	monitor.toMessageChannel(monitorMessage)
@@ -113,7 +113,7 @@ func (monitor *Monitor) getMemStat() {
 			Description: "内存",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
 		monitor.toMessageChannel(monitorMessage)
@@ -129,7 +129,7 @@ func (monitor *Monitor) getDiskStat() {
 			Description: "硬盘",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
 		monitor.toMessageChannel(monitorMessage)
@@ -145,7 +145,7 @@ func (monitor *Monitor) getCPUStat() {
 			Description: "CPU",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
 		monitor.toMessageChannel(monitorMessage)
@@ -191,7 +191,7 @@ func (monitor *Monitor) getStat(key string, value string) {
 		Description: key,
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
-		ServerIP:    monitor.IP,
+		ServerId:    monitor.IP,
 		CreateTime:  monitor.CreateTime,
 	}
 	monitor.toMessageChannel(monitorMessage)
@@ -205,7 +205,7 @@ func (monitor *Monitor) getServiceStat() {
 			Description: item.Key,
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
 		if item.Status {
