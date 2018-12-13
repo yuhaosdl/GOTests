@@ -1,0 +1,29 @@
+syntax = "proto3";
+package order;
+
+service Order {
+
+  // Sends a greeting
+
+  rpc GetOrder (GetOrderRequest) returns (GetOrderResponse) {}
+
+}
+
+
+// The request message containing the user's name.
+
+message GetOrderRequest {
+
+  string Id = 1;
+
+}
+
+ 
+
+// The response message containing the greetings
+
+message GetOrderResponse {
+
+  string message = 1;
+
+}

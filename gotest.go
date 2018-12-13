@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 type Foo struct {
@@ -20,15 +19,17 @@ func (self Foo) GetConst() {
 	return
 }
 func main() {
-	ch := make(chan string)
-	go func() {
-		for {
-			ch <- "11"
-		}
 
-	}()
-	time.Sleep(1 * time.Second)
-	fmt.Println(<-ch)
+	p := People{
+		Age:  12,
+		Name: "yuhao",
+	}
+	AlterName(p)
+	fmt.Println(p.Name)
+
+}
+func AlterName(p People) {
+	p.Name = "yyyy"
 }
 
 type TestChanel struct {
