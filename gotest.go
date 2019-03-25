@@ -47,7 +47,7 @@ type People struct {
 }
 
 func (people *People) Feed() {
-	fmt.Printf("接口测试啊啊啊啊 %p", &people)
+	fmt.Printf("接口测试改动 %p", &people)
 	fmt.Println()
 }
 
