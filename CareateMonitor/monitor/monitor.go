@@ -14,23 +14,24 @@ import (
 
 //MonitorMessage : 监控消息
 type MonitorMessage struct {
-	ServerName  string
-	ServerIP    string
-	InDateTime  string
-	Key         string
-	Value       string
-	Description string
-	CreateTime  string
+	ServerName  string `bson:"ServerName"`
+	ServerId    string `bson:"ServerId"`
+	InDateTime  string `bson:"InDateTime"`
+	Key         string `bson:"Key"`
+	Value       string `bson:"Value"`
+	Description string `bson:"Description"`
+	CreateTime  string `bson:"CreateTime"`
 }
 
 //Monitor ：监控主体
 type Monitor struct {
 	IP              string
 	ServerName      string
-	messageChanel   chan *MonitorMessage
+	messageChannel  chan *MonitorMessage
 	writer          Writer
 	CreateTime      string
 	monitorInterval int
+	supervisePort   []SupervisePort
 }
 
 //Writer : 接口
@@ -41,7 +42,7 @@ type Writer interface {
 //Write : 写入数据
 func (monitor *Monitor) Write() {
 	for {
-		data := <-monitor.messageChanel
+		data := <-monitor.messageChannel
 		go func() {
 			if err := monitor.writer.write(data); err != nil {
 				fmt.Println(err.Error())
@@ -51,7 +52,7 @@ func (monitor *Monitor) Write() {
 }
 
 //InitMonitor ： 初始化
-func InitMonitor(writer Writer, serverName string, interval int) (monitor *Monitor) {
+func InitMonitor(writer Writer, serverName string, interval int, supervisePort []SupervisePort) (monitor *Monitor) {
 	var addr string
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, address := range addrs {
@@ -66,11 +67,12 @@ func InitMonitor(writer Writer, serverName string, interval int) (monitor *Monit
 		}
 	}
 	monitor = &Monitor{
-		messageChanel:   make(chan *MonitorMessage, 500),
+		messageChannel:  make(chan *MonitorMessage, 500),
 		IP:              addr,
 		ServerName:      serverName,
 		writer:          writer,
 		monitorInterval: interval,
+		supervisePort:   supervisePort,
 	}
 	return
 }
@@ -83,8 +85,23 @@ func (monitor *Monitor) MonitorLoop() {
 		go monitor.getDiskStat()
 		go monitor.getMemStat()
 		go monitor.getNetStat()
+		go monitor.getHeartbeat()
 		time.Sleep(time.Duration(monitor.monitorInterval) * time.Second)
 	}
+}
+
+//getHeartbeat : 获取自身状态
+func (monitor *Monitor) getHeartbeat() {
+	monitorMessage := &MonitorMessage{
+		Key:         "MonitorService",
+		Value:       "1",
+		Description: monitor.ServerName + "-MonitorService",
+		InDateTime:  getTime(),
+		ServerName:  monitor.ServerName,
+		ServerId:    monitor.IP,
+		CreateTime:  monitor.CreateTime,
+	}
+	monitor.toMessageChannel(monitorMessage)
 }
 
 //getMemStat : 循环获取内存状态
@@ -96,10 +113,10 @@ func (monitor *Monitor) getMemStat() {
 			Description: "内存",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.messageChanel <- monitorMessage
+		monitor.toMessageChannel(monitorMessage)
 	}
 }
 
@@ -112,10 +129,10 @@ func (monitor *Monitor) getDiskStat() {
 			Description: "硬盘",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		monitor.messageChanel <- monitorMessage
+		monitor.toMessageChannel(monitorMessage)
 	}
 }
 
@@ -128,15 +145,10 @@ func (monitor *Monitor) getCPUStat() {
 			Description: "CPU",
 			InDateTime:  getTime(),
 			ServerName:  monitor.ServerName,
-			ServerIP:    monitor.IP,
+			ServerId:    monitor.IP,
 			CreateTime:  monitor.CreateTime,
 		}
-		select {
-		case monitor.messageChanel <- monitorMessage:
-		case <-time.After(1 * time.Second):
-			fmt.Println("写入messageChanel超时")
-
-		}
+		monitor.toMessageChannel(monitorMessage)
 
 	}
 }
@@ -146,14 +158,16 @@ func (monitor *Monitor) getNetStat() {
 	established := 0
 	timewait := 0
 	closewait := 0
-	redis := false
-	elasticsearch := false
 	for _, item := range n {
-		if item.Laddr.Port == 6379 && item.Status == "LISTEN" {
-			redis = true
-		}
-		if item.Laddr.Port == 9200 && item.Status == "LISTEN" {
-			elasticsearch = true
+		// for _, i := range monitor.supervisePort {
+		// 	if item.Laddr.Port == i.Value && item.Status == "LISTEN" {
+		// 		i.Status = true
+		// 	}
+		// }
+		for i := 0; i < len(monitor.supervisePort); i++ {
+			if item.Laddr.Port == monitor.supervisePort[i].Value && item.Status == "LISTEN" {
+				monitor.supervisePort[i].Status = true
+			}
 		}
 		if item.Status == "ESTABLISHED" {
 			established++
@@ -165,8 +179,7 @@ func (monitor *Monitor) getNetStat() {
 			closewait++
 		}
 	}
-	go monitor.getRedisStat(redis)
-	go monitor.getElasticsearchStat(elasticsearch)
+	go monitor.getServiceStat()
 	go monitor.getStat("Net_Established", strconv.Itoa(established))
 	go monitor.getStat("Net_Timewait", strconv.Itoa(timewait))
 	go monitor.getStat("Net_Closewait", strconv.Itoa(closewait))
@@ -178,41 +191,29 @@ func (monitor *Monitor) getStat(key string, value string) {
 		Description: key,
 		InDateTime:  getTime(),
 		ServerName:  monitor.ServerName,
-		ServerIP:    monitor.IP,
+		ServerId:    monitor.IP,
 		CreateTime:  monitor.CreateTime,
 	}
-	monitor.messageChanel <- monitorMessage
-}
-func (monitor *Monitor) getRedisStat(n bool) {
-	redisMonitorMessage := &MonitorMessage{
-		Key:         "Service_redis",
-		Value:       "close",
-		Description: "redis服务",
-		InDateTime:  getTime(),
-		ServerName:  monitor.ServerName,
-		ServerIP:    monitor.IP,
-		CreateTime:  monitor.CreateTime,
-	}
-	if n {
-		redisMonitorMessage.Value = "open"
-	}
-	monitor.messageChanel <- redisMonitorMessage
+	monitor.toMessageChannel(monitorMessage)
 }
 
-func (monitor *Monitor) getElasticsearchStat(n bool) {
-	monitorMessage := &MonitorMessage{
-		Key:         "Service_elasticsearch",
-		Value:       "close",
-		Description: "elasticsearch服务",
-		InDateTime:  getTime(),
-		ServerName:  monitor.ServerName,
-		ServerIP:    monitor.IP,
-		CreateTime:  monitor.CreateTime,
+func (monitor *Monitor) getServiceStat() {
+	for _, item := range monitor.supervisePort {
+		monitorMessage := &MonitorMessage{
+			Key:         item.Key,
+			Value:       "0",
+			Description: item.Key,
+			InDateTime:  getTime(),
+			ServerName:  monitor.ServerName,
+			ServerId:    monitor.IP,
+			CreateTime:  monitor.CreateTime,
+		}
+		if item.Status {
+			monitorMessage.Value = "1"
+		}
+		monitor.toMessageChannel(monitorMessage)
 	}
-	if n {
-		monitorMessage.Value = "open"
-	}
-	monitor.messageChanel <- monitorMessage
+
 }
 
 //GetTime : 获取当前时间字符串
@@ -223,6 +224,22 @@ func getTime() (dataTimeStr string) {
 
 // float64ToString : float64转 string
 func float64ToString(f float64) (str string) {
-	str = strconv.FormatFloat(f, 'f', 2, 64) + "%"
+	str = strconv.FormatFloat(f, 'f', 2, 64)
 	return
+}
+
+//toMessageChannel : 写入MessageChannel里
+func (monitor *Monitor) toMessageChannel(monitorMessage *MonitorMessage) {
+	select {
+	case monitor.messageChannel <- monitorMessage:
+	case <-time.After(1 * time.Second):
+		fmt.Println("写入messageChannel超时")
+	}
+}
+
+//SupervisePort : 监控服务
+type SupervisePort struct {
+	Key    string
+	Value  uint32
+	Status bool
 }

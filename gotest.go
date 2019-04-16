@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 type Foo struct {
@@ -20,23 +19,17 @@ func (self Foo) GetConst() {
 	return
 }
 func main() {
-	testChanel := &TestChanel{
-		inChanel: make(chan string, 10),
-		close:    make(chan string, 1),
-	}
-	go func() {
-		time.Sleep(5 * time.Second)
-		close(testChanel.close)
-	}()
-	for {
-		select {
-		case testChanel.inChanel <- "1111":
-			fmt.Print("没关闭")
-		case a := <-testChanel.close:
-			fmt.Println(a)
-		}
-	}
 
+	p := People{
+		Age:  12,
+		Name: "yuhao",
+	}
+	AlterName(p)
+	fmt.Println(p.Name)
+
+}
+func AlterName(p People) {
+	p.Name = "yyyy"
 }
 
 type TestChanel struct {
@@ -54,7 +47,7 @@ type People struct {
 }
 
 func (people *People) Feed() {
-	fmt.Printf("接口测试啊啊啊啊 %p", &people)
+	fmt.Printf("接口测试改动 %p", &people)
 	fmt.Println()
 }
 
